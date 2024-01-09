@@ -3,6 +3,7 @@ package client
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"strings"
@@ -15,10 +16,16 @@ type Client server.Client // new type to implement local functions
 func (client *Client)Receive() { // goroutine for client receiving
 	for {
 		msgType := make([]byte, 1)
+		
 		_, err := client.Socket.Read(msgType)
 		if err !=nil {
-			fmt.Println("Error on receiving type")
+			fmt.Println("Error on receiving type: ")
 			fmt.Println(err.Error())
+
+			if err == io.EOF {
+				fmt.Println("EOF received.. closing server connection")
+				break
+			}
 		}
 		fmt.Println("Type received: ", msgType)
 
@@ -55,12 +62,13 @@ func StartClient() { // main client starter
 		Socket: connection,
 	}
 
+	defer client.Socket.Close()
 	go client.Receive()
 
 	for {
 		reader := bufio.NewReader(os.Stdin)
 		msg, _ := reader.ReadString('\n')
-		strings.Split(msg, "")
+		strings.Split(msg, "") // let it here for now
 		gm := server.PointMessage{
 			Position: server.Vector2{ X :10,  Y:11},
 			Color: server.ColorType{R: 100, G: 100, B: 100, A: 100},

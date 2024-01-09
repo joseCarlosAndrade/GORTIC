@@ -15,9 +15,10 @@ type ColorType struct {
 }
 
 const (
-	TypeLength int32 = 8
-	PMessage   int8  = 0x00000000
-	DMessage   int8  = 0x00000001
+	TypeLength  int32 = 8
+	PMessage    int8  = 0x00000000
+	DMessage    int8  = 0x00000001
+	ExitMessage int8  = 0x00000002
 )
 
 /* Interface to generalize messaging */

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"io"
 	"net"
 )
 
@@ -63,6 +64,10 @@ func (m *ClientManager) Receive(client *Client) { // receive goroutine that exis
 		if err !=nil {
 			fmt.Println("Error on receiving type")
 			fmt.Println(err.Error())
+			if err == io.EOF { // closing connection in case of a eof received
+				m.unregister <- client
+				break
+			}
 		}
 		fmt.Println("Type received: ", msgType)
 
