@@ -1,6 +1,9 @@
 package interfaces
 
-import rl "github.com/gen2brain/raylib-go/raylib"
+import (
+	rl "github.com/gen2brain/raylib-go/raylib"
+	"github.com/joseCarlosAndrade/GORTIC/server"
+)
 
 const (
 	ScreenWidth  int32 = 800
@@ -9,12 +12,12 @@ const (
 )
 
 /* Point data that will be passed throught the network */
-type PointData struct {
-	X int32
-	Y int32
-	Thickness int32
-	Color rl.Vector3
-}
+// type PointData struct {
+// 	X int32
+// 	Y int32
+// 	Thickness int32
+// 	Color rl.Vector3
+// }
 
 /* Interface handler */
 type DrawingBoard struct {
@@ -23,11 +26,11 @@ type DrawingBoard struct {
 	Canva rl.RenderTexture2D
 }
 
-func (board * DrawingBoard) InitScreenRelated() {
-	board.InitScreen()
-	board.CheckDrawing()
-	board.Canva = rl.LoadRenderTexture(ScreenWidth, ScreenHeight)
+type UserInterface struct {
+	Board *DrawingBoard
+	Client *server.Client
 }
+
 
 func (board * DrawingBoard) InitScreen()  {
 	rl.InitWindow(ScreenWidth, ScreenHeight, "Your Board!")
@@ -38,21 +41,35 @@ func (board * DrawingBoard) InitScreen()  {
 	rl.EndTextureMode()
 }
 
-func (board * DrawingBoard) CheckDrawing() { // handles the drawing part
+func (userInt * UserInterface) InitScreenRelated() {
+	userInt.Board.InitScreen()
+	userInt.CheckDrawing()
+	userInt.Board.Canva = rl.LoadRenderTexture(ScreenWidth, ScreenHeight)
+}
+
+func (userInt * UserInterface) CheckDrawing() { // handles the drawing part
 	defer rl.CloseWindow()
 	for !rl.WindowShouldClose() { // while is Drawing
 
 		rl.BeginDrawing()
 		// rl.BeginTextureMode(board.Canva) //  TODO: fix sudden black screen for no reason
 
-		if board.Drawing && rl.IsMouseButtonDown(rl.MouseButtonLeft) {
+		if userInt.Board.Drawing && rl.IsMouseButtonDown(rl.MouseButtonLeft)  {
 			pos := rl.GetMousePosition()
+			pointdata := server.PointMessage{
+				Position : server.Vector2{X: int32(pos.X), Y: int32(pos.Y)},
+				Thickness: 4,
+				Color: server.ColorType{R: 255, G: 255, B: 255, A: 255},
+			}
 
 			rl.DrawCircle(int32(pos.X), int32(pos.Y), 4, rl.Black)
-		} else if !board.Drawing {
+			
+			userInt.Client.SendCompleteMessage(pointdata)
+
+		} else if !userInt.Board.Drawing {
 			rl.ClearBackground(rl.White)
 		} 	
-		rl.DrawText(board.CurrentWord, 15, 30, 20, rl.Black)
+		rl.DrawText(userInt.Board.CurrentWord, 15, 30, 20, rl.Black)
 
 		// rl.EndTextureMode()
 		// rl.BeginDrawing()

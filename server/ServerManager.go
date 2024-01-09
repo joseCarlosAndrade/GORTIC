@@ -1,8 +1,8 @@
 package server
 
 import (
-	"bytes"
-	"encoding/gob"
+	// "bytes"
+	// "encoding/gob"
 	"fmt"
 	"io"
 	"net"
@@ -24,12 +24,14 @@ type ClientManager struct {
 
 type Client struct {
 	Socket net.Conn
-	Data   chan []byte
+	Data   chan []byte // channel for server -> client messages broadcasting
 
 	// TODO: add info
 	// name string
 }
 
+
+/* Goroutine to handle register, unregister and broadcast channels of client manager */
 func (m *ClientManager) Start() {
 	for {
 		select {
@@ -57,7 +59,8 @@ func (m *ClientManager) Start() {
 	}
 }
 
-func (m *ClientManager) Receive(client *Client) { // receive goroutine that exists for every active client
+/* Receive goroutine that runs for every online client */
+func (m *ClientManager) Receive(client *Client) { 
 	for { // receives 8 bytes of information regarding the message type
 		msgType := make([]byte, 1)
 		_, err := client.Socket.Read(msgType)
@@ -80,7 +83,7 @@ func (m *ClientManager) Receive(client *Client) { // receive goroutine that exis
 		} 
 		if length > 0 {
 			msgdecoded,_ := DesserializeMessageData(msg, msgType)
-			fmt.Println("Message received: ", msgdecoded)
+			fmt.Println("[BROADCASTING] Message received: ", msgdecoded)
 
 			// TODO: set name operation
 			// if msg == set_name client.name etc etc and not broadcast
@@ -91,7 +94,8 @@ func (m *ClientManager) Receive(client *Client) { // receive goroutine that exis
 	}
 }
 
-func (m *ClientManager) Send(client *Client) { // send goroutine that send the data from client.data to the client itself
+/* Send goroutine that send the data from client.Data channel to the client socket itself */
+func (m *ClientManager) Send(client *Client) { 
 	defer client.Socket.Close() // we must use defer here so that when an error occurs, it still closes even though the function is returned
 	for {
 		select {
@@ -110,34 +114,3 @@ func (m *ClientManager) Send(client *Client) { // send goroutine that send the d
 	}
 }
 
-func SerializeMessageData(data interface {}) ([]byte, error) { // serializing messages 
-	var buffer bytes.Buffer
-	encoder := gob.NewEncoder(&buffer)
-
-	err := encoder.Encode(data)
-	if err != nil {
-		return nil, err
-	}
-
-	return buffer.Bytes(), nil
-}
-
-func DesserializeMessageData(data []byte, mtype []byte) (GMessage, error) { // desserializing into GMessage type
-	
-	reader := bytes.NewReader(data)
-	decoder := gob.NewDecoder(reader)
-
-	switch mtype[0] {
-
-	case byte(PMessage): // desserializing to point message type (i dont know if this is ugly or not)
-		var message PointMessage
-		decoder.Decode(&message)
-		fmt.Println("Desserializing to point message")
-		return message, nil
-
-	case byte(DMessage):
-	default:
-	}
-
-		return nil, nil
-}

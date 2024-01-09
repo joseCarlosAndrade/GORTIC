@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/joseCarlosAndrade/GORTIC/client"
+	// "github.com/joseCarlosAndrade/GORTIC/client"
 	"github.com/joseCarlosAndrade/GORTIC/server"
 	"github.com/joseCarlosAndrade/GORTIC/interfaces"
 	"flag"
@@ -17,7 +17,7 @@ func main() {
     if s := strings.ToLower(*flagMode); s == "server" {
         server.StartServer()
     } else if s == "client" {
-        client.StartClient()
+        server.StartDebugClient()
     } else {
 		interfaces.InitInterface()
 	}

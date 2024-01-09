@@ -36,3 +36,11 @@ type PointMessage struct {
 func (p PointMessage) Output() {
 	fmt.Println(p.Position, p.Color, p.Thickness)
 }
+
+type DrawMessage struct {
+	s string
+}
+
+func (d DrawMessage) Output() {
+	fmt.Println(d.s)
+}
