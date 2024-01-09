@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/joseCarlosAndrade/GORTIC/client"
 	"github.com/joseCarlosAndrade/GORTIC/server"
+	"github.com/joseCarlosAndrade/GORTIC/interfaces"
 	"flag"
 	"strings"
 )
@@ -13,9 +14,11 @@ func main() {
 	// help: https://www.thepolyglotdeveloper.com/2017/05/network-sockets-with-the-go-programming-language/
 	flagMode := flag.String("mode", "server", "start in client or server mode")
     flag.Parse()
-    if strings.ToLower(*flagMode) == "server" {
+    if s := strings.ToLower(*flagMode); s == "server" {
         server.StartServer()
-    } else {
+    } else if s == "client" {
         client.StartClient()
-    }
+    } else {
+		interfaces.InitInterface()
+	}
 }	

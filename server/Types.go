@@ -1,6 +1,8 @@
 package server
 
 import (
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"net"
 )
@@ -55,20 +57,31 @@ func (m *ClientManager) Start() {
 }
 
 func (m *ClientManager) Receive(client *Client) { // receive goroutine that exists for every active client
-	for {
+	for { // receives 8 bytes of information regarding the message type
+		msgType := make([]byte, 1)
+		_, err := client.Socket.Read(msgType)
+		if err !=nil {
+			fmt.Println("Error on receiving type")
+			fmt.Println(err.Error())
+		}
+		fmt.Println("Type received: ", msgType)
+
 		msg := make([]byte, MESSAGE_LENGTH)
 		length, err := client.Socket.Read(msg)
-
+		
 		if err != nil {
 			fmt.Println("Error on socket ", client.Socket.LocalAddr().String(), ". Error: ")
 			fmt.Println(err.Error())
 		} 
 		if length > 0 {
-			fmt.Println("Message received: ", string(msg))
+			msgdecoded,_ := DesserializeMessageData(msg, msgType)
+			fmt.Println("Message received: ", msgdecoded)
 
 			// TODO: set name operation
 			// if msg == set_name client.name etc etc and not broadcast
-			m.broadcast <- msg // broadcasting (channeling received msg to broadcast channel)
+			
+			m.broadcast <- append(msgType, msg...) // weird way of appending two slices ???
+			// m.broadcast <- msg // broadcasting (channeling received msg to broadcast channel)
 		}
 	}
 }
@@ -92,3 +105,34 @@ func (m *ClientManager) Send(client *Client) { // send goroutine that send the d
 	}
 }
 
+func SerializeMessageData(data interface {}) ([]byte, error) { // serializing messages 
+	var buffer bytes.Buffer
+	encoder := gob.NewEncoder(&buffer)
+
+	err := encoder.Encode(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return buffer.Bytes(), nil
+}
+
+func DesserializeMessageData(data []byte, mtype []byte) (GMessage, error) { // desserializing into GMessage type
+	
+	reader := bytes.NewReader(data)
+	decoder := gob.NewDecoder(reader)
+
+	switch mtype[0] {
+
+	case byte(PMessage): // desserializing to point message type (i dont know if this is ugly or not)
+		var message PointMessage
+		decoder.Decode(&message)
+		fmt.Println("Desserializing to point message")
+		return message, nil
+
+	case byte(DMessage):
+	default:
+	}
+
+		return nil, nil
+}
