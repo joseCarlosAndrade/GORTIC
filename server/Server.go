@@ -7,6 +7,8 @@ import (
 	// "encoding/gob"
 )
 
+
+
 func Print() {
 	fmt.Println("server side")
 }
@@ -37,6 +39,7 @@ func StartServer() {
 		client := &Client{
 			Socket: conn,
 			Data: make(chan []byte),
+			
 		}
 		// channeling client to register channel
 		clientManager.register <- client

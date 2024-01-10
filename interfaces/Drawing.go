@@ -1,6 +1,10 @@
 package interfaces
 
 import (
+	// "fmt"
+
+	"fmt"
+
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"github.com/joseCarlosAndrade/GORTIC/server"
 )
@@ -19,25 +23,13 @@ const (
 // 	Color rl.Vector3
 // }
 
-/* Interface handler */
-type DrawingBoard struct {
-	CurrentWord string
-	Drawing bool
-	Canva rl.RenderTexture2D
-}
-
-type UserInterface struct {
-	Board *DrawingBoard
-	Client *server.Client
-}
-
 
 func (board * DrawingBoard) InitScreen()  {
 	rl.InitWindow(ScreenWidth, ScreenHeight, "Your Board!")
 	rl.SetTargetFPS(FPS)
 
 	rl.BeginTextureMode(board.Canva)
-	rl.ClearBackground(rl.White)
+	rl.ClearBackground(rl.Black)
 	rl.EndTextureMode()
 }
 
@@ -45,6 +37,7 @@ func (userInt * UserInterface) InitScreenRelated() {
 	userInt.Board.InitScreen()
 	userInt.CheckDrawing()
 	userInt.Board.Canva = rl.LoadRenderTexture(ScreenWidth, ScreenHeight)
+	fmt.Println("done")
 }
 
 func (userInt * UserInterface) CheckDrawing() { // handles the drawing part
@@ -53,23 +46,77 @@ func (userInt * UserInterface) CheckDrawing() { // handles the drawing part
 
 		rl.BeginDrawing()
 		// rl.BeginTextureMode(board.Canva) //  TODO: fix sudden black screen for no reason
+		if userInt.Board.Drawing {
+			if  rl.IsMouseButtonDown(rl.MouseButtonLeft)  { // click
+				fmt.Println("clicking")
+				pos := rl.GetMousePosition()
+				pointdata := server.PointMessage{
+					Origin: userInt.Client.Socket.LocalAddr().String(),
+					Position : server.Vector2{X: int32(pos.X), Y: int32(pos.Y)},
+					Thickness: 4,
+					Color: server.ColorType{R: 10, G: 10, B: 10, A: 255},
+				}
+	
+				rl.DrawCircle(int32(pos.X), int32(pos.Y), 4, rl.White)
+				userInt.outgoingDrawing <- pointdata
+				rl.EndDrawing()
+				rl.BeginDrawing()
+				rl.DrawCircle(int32(pos.X), int32(pos.Y), 4, rl.White)
 
-		if userInt.Board.Drawing && rl.IsMouseButtonDown(rl.MouseButtonLeft)  {
-			pos := rl.GetMousePosition()
-			pointdata := server.PointMessage{
-				Position : server.Vector2{X: int32(pos.X), Y: int32(pos.Y)},
-				Thickness: 4,
-				Color: server.ColorType{R: 255, G: 255, B: 255, A: 255},
+
 			}
+		 // sending information to server
+			// fmt.Println("AAAAAAAAAAAAAAAAAAAAAAAAAA")
 
-			rl.DrawCircle(int32(pos.X), int32(pos.Y), 4, rl.Black)
-			
-			userInt.Client.SendCompleteMessage(pointdata)
+			// userInt.Client.SendCompleteMessage(pointdata) // send to server
 
 		} else if !userInt.Board.Drawing {
-			rl.ClearBackground(rl.White)
+			// for pm := range userInt.Client.IncomingDrawing {
+			// 	p, ok := pm.(server.PointMessage)
+			// 	if ok {
+			// 		fmt.Println("drawing incoming..")
+			// 		rl.DrawCircle(
+			// 		p.Position.X,
+			// 		p.Position.Y,
+			// 		float32(p.Thickness),
+			// 		rl.Blue,
+			// 	)
+			// 	}
+			// }
+			// rl.ClearBackground(rl.White)
+		Incoming:
+			for {
+				select {
+				case pm := <- userInt.Client.IncomingDrawing:
+					p, ok := pm.(server.PointMessage)
+					if ok {
+						fmt.Println("drawing incoming..")
+						rl.DrawCircle(
+							p.Position.X,
+							p.Position.Y,
+							float32(p.Thickness),
+							rl.Blue,
+							)
+					rl.EndDrawing()
+					rl.BeginDrawing()
+					rl.DrawCircle(
+						p.Position.X,
+						p.Position.Y,
+						float32(p.Thickness),
+						rl.Blue,
+						)
+					}
+					
+				default:
+					break Incoming
+				}
+			}
+			
 		} 	
-		rl.DrawText(userInt.Board.CurrentWord, 15, 30, 20, rl.Black)
+		
+		rl.EndDrawing()
+		rl.BeginDrawing()
+		rl.DrawText(userInt.Board.CurrentWord, 15, 30, 20, rl.Beige)
 
 		// rl.EndTextureMode()
 		// rl.BeginDrawing()

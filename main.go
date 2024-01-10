@@ -18,7 +18,9 @@ func main() {
         server.StartServer()
     } else if s == "client" {
         server.StartDebugClient()
-    } else {
-		interfaces.InitInterface()
+    } else if s == "drawing" {
+		interfaces.InitInterface(true)
+	} else {
+		interfaces.InitInterface(false)
 	}
 }	

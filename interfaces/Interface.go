@@ -1,7 +1,7 @@
 package interfaces
 
 import (
-	// rl "github.com/gen2brain/raylib-go/raylib"
+	rl "github.com/gen2brain/raylib-go/raylib"
 	"bufio"
 	"fmt"
 	// "fmt"
@@ -11,15 +11,39 @@ import (
 	"github.com/joseCarlosAndrade/GORTIC/server"
 )
 
+/* Interface handler */
+type DrawingBoard struct {
+	CurrentWord string
+	Drawing bool
+	Canva rl.RenderTexture2D
+}
 
+type UserInterface struct {
+	Board *DrawingBoard
+	Client *server.Client
 
+	// incoming chan server.GMessage // channel to handle incoming messages
+	outgoingDrawing chan server.PointMessage // channel to handle outgoing messages
+}
 
+func (i *UserInterface)HandleAssyncronousMessages() {
+	for {
+		select {
+		case m, ok := <- i.outgoingDrawing:
+			if !ok {
+				fmt.Println("Outgoing channel from client ", i.Client.Socket.LocalAddr().String(), " broke. Exiting..")
+				return
+			}
+			i.Client.SendCompleteMessage(m)
+		}
+	}
+}
 
-func InitInterface() {
+func InitInterface(drawing bool) {
 
 	board := &DrawingBoard{
 		CurrentWord: "This word!",
-		Drawing: true,
+		Drawing: drawing,
 		
 	}
 
@@ -32,12 +56,14 @@ func InitInterface() {
 	userInterface := UserInterface{
 		Board: board,
 		Client: client,
+		// incoming: make(chan server.GMessage),
+		outgoingDrawing: make(chan server.PointMessage),
 	}
 	 
 	// initializing go routines
 	go client.Receive()
 	go userInterface.InitScreenRelated()
-	
+	go userInterface.HandleAssyncronousMessages()
 
 	 
 	for {

@@ -5,7 +5,7 @@ import (
 	// "encoding/gob"
 	"fmt"
 	"io"
-	"net"
+	// "net"
 )
 
 // holding data about client and server managers
@@ -22,13 +22,7 @@ type ClientManager struct {
 	unregister chan *Client
 }
 
-type Client struct {
-	Socket net.Conn
-	Data   chan []byte // channel for server -> client messages broadcasting
 
-	// TODO: add info
-	// name string
-}
 
 
 /* Goroutine to handle register, unregister and broadcast channels of client manager */

@@ -28,6 +28,7 @@ type GMessage interface {
 
 /* Point data that will be passed throught the network */
 type PointMessage struct {
+	Origin    string
 	Position  Vector2
 	Thickness int32
 	Color     ColorType
