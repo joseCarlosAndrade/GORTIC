@@ -1,9 +1,12 @@
 package interfaces
 
 import (
-	rl "github.com/gen2brain/raylib-go/raylib"
 	"bufio"
 	"fmt"
+	"sync"
+
+	rl "github.com/gen2brain/raylib-go/raylib"
+
 	// "fmt"
 	"os"
 	"strings"
@@ -16,6 +19,7 @@ type DrawingBoard struct {
 	CurrentWord string
 	Drawing bool
 	Canva rl.RenderTexture2D
+	PointBuffer []server.PointMessage
 }
 
 type UserInterface struct {
@@ -23,18 +27,29 @@ type UserInterface struct {
 	Client *server.Client
 
 	// incoming chan server.GMessage // channel to handle incoming messages
-	outgoingDrawing chan server.PointMessage // channel to handle outgoing messages
+	outgoingDrawing chan server.PointMessage // channel to handle outgoing messages (apparently its not needed???/)
+	drawingMutex sync.Mutex
 }
 
 func (i *UserInterface)HandleAssyncronousMessages() {
 	for {
-		select {
-		case m, ok := <- i.outgoingDrawing:
-			if !ok {
-				fmt.Println("Outgoing channel from client ", i.Client.Socket.LocalAddr().String(), " broke. Exiting..")
-				return
+		// select {
+		// case m, ok := <- i.outgoingDrawing:
+		// 	if !ok {
+		// 		fmt.Println("Outgoing channel from client ", i.Client.Socket.LocalAddr().String(), " broke. Exiting..")
+		// 		return
+		// 	}
+		// 	i.Client.SendCompleteMessage(m)
+		// default:
+		// }
+		
+		if i.Board.PointBuffer != nil {
+			for _, p := range i.Board.PointBuffer {
+				// i.outgoingDrawing <-p
+				i.Client.SendCompleteMessage(p)
 			}
-			i.Client.SendCompleteMessage(m)
+		// if i.Board.PointBuffer != nil {
+			i.Board.PointBuffer = nil
 		}
 	}
 }
@@ -44,7 +59,8 @@ func InitInterface(drawing bool) {
 	board := &DrawingBoard{
 		CurrentWord: "This word!",
 		Drawing: drawing,
-		
+		PointBuffer: nil,
+		// Canva: rl.LoadRenderTexture(ScreenWidth, ScreenHeight), // canva
 	}
 
 	client, err := server.StartInterfaceClient()
@@ -58,6 +74,7 @@ func InitInterface(drawing bool) {
 		Client: client,
 		// incoming: make(chan server.GMessage),
 		outgoingDrawing: make(chan server.PointMessage),
+
 	}
 	 
 	// initializing go routines

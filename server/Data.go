@@ -15,10 +15,15 @@ type ColorType struct {
 }
 
 const (
+	// message typing
 	TypeLength  int32 = 8
 	PMessage    int8  = 0x00000000
 	DMessage    int8  = 0x00000001
 	ExitMessage int8  = 0x00000002
+
+	// drawing commands
+	EraseAll  int8 = 0x00000001
+	FillColor int8 = 0x00000001
 )
 
 /* Interface to generalize messaging */
@@ -39,9 +44,16 @@ func (p PointMessage) Output() {
 }
 
 type DrawMessage struct {
-	s string
+	Origin  string
+	Message string
 }
 
 func (d DrawMessage) Output() {
-	fmt.Println(d.s)
+	fmt.Println(d.Origin)
+}
+
+type DrawCommand struct {
+	Origin  string
+	Command int8
+	Info    string
 }

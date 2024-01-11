@@ -35,20 +35,22 @@ func (board * DrawingBoard) InitScreen()  {
 
 func (userInt * UserInterface) InitScreenRelated() {
 	userInt.Board.InitScreen()
-	userInt.CheckDrawing()
+	
 	userInt.Board.Canva = rl.LoadRenderTexture(ScreenWidth, ScreenHeight)
+	userInt.CheckDrawing()
 	fmt.Println("done")
 }
 
 func (userInt * UserInterface) CheckDrawing() { // handles the drawing part
 	defer rl.CloseWindow()
 	for !rl.WindowShouldClose() { // while is Drawing
+		
 
-		rl.BeginDrawing()
+		// rl.BeginDrawing()
 		// rl.BeginTextureMode(board.Canva) //  TODO: fix sudden black screen for no reason
 		if userInt.Board.Drawing {
 			if  rl.IsMouseButtonDown(rl.MouseButtonLeft)  { // click
-				fmt.Println("clicking")
+
 				pos := rl.GetMousePosition()
 				pointdata := server.PointMessage{
 					Origin: userInt.Client.Socket.LocalAddr().String(),
@@ -56,12 +58,31 @@ func (userInt * UserInterface) CheckDrawing() { // handles the drawing part
 					Thickness: 4,
 					Color: server.ColorType{R: 10, G: 10, B: 10, A: 255},
 				}
-	
+				// userInt.drawingMutex.Lock()
+				rl.BeginTextureMode(userInt.Board.Canva)
 				rl.DrawCircle(int32(pos.X), int32(pos.Y), 4, rl.White)
-				userInt.outgoingDrawing <- pointdata
-				rl.EndDrawing()
-				rl.BeginDrawing()
-				rl.DrawCircle(int32(pos.X), int32(pos.Y), 4, rl.White)
+				rl.EndTextureMode()
+
+				userInt.drawingMutex.Lock()
+				userInt.Board.PointBuffer = append(userInt.Board.PointBuffer, pointdata)
+				fmt.Println("point appendend")
+				userInt.drawingMutex.Unlock()
+				// userInt.drawingMutex.Unlock()
+
+				// userInt.drawingMutex.Lock()
+				// if len(userInt.Board.PointBuffer) >= 10 {
+				// 	for _, p := range userInt.Board.PointBuffer {
+						// userInt.outgoingDrawing <- pointdata
+
+				// 	}
+				// 	userInt.Board.PointBuffer = nil
+				// }
+				
+
+				fmt.Println("Point drawn on: ", pos)
+				// rl.EndDrawing()
+				// rl.BeginDrawing()
+				// rl.DrawCircle(int32(pos.X), int32(pos.Y), 4, rl.White)
 
 
 			}
@@ -91,20 +112,23 @@ func (userInt * UserInterface) CheckDrawing() { // handles the drawing part
 					p, ok := pm.(server.PointMessage)
 					if ok {
 						fmt.Println("drawing incoming..")
+
+						rl.BeginTextureMode(userInt.Board.Canva)
 						rl.DrawCircle(
 							p.Position.X,
 							p.Position.Y,
 							float32(p.Thickness),
 							rl.Blue,
 							)
-					rl.EndDrawing()
-					rl.BeginDrawing()
-					rl.DrawCircle(
-						p.Position.X,
-						p.Position.Y,
-						float32(p.Thickness),
-						rl.Blue,
-						)
+						rl.EndTextureMode()
+					// rl.EndDrawing()
+					// rl.BeginDrawing()
+					// rl.DrawCircle(
+					// 	p.Position.X,
+					// 	p.Position.Y,
+					// 	float32(p.Thickness),
+					// 	rl.Blue,
+					// 	)
 					}
 					
 				default:
@@ -113,9 +137,19 @@ func (userInt * UserInterface) CheckDrawing() { // handles the drawing part
 			}
 			
 		} 	
-		
-		rl.EndDrawing()
+
 		rl.BeginDrawing()
+		rl.ClearBackground(rl.Black)
+		rl.DrawTextureRec( // i have to use this function so that the y axis is inverted
+			userInt.Board.Canva.Texture, 
+			rl.NewRectangle(0, 0, float32(userInt.Board.Canva.Texture.Width), -float32(userInt.Board.Canva.Texture.Height)),
+			rl.NewVector2(0, 0),
+			rl.White,
+		)
+		// rl.DrawTexture(userInt.Board.Canva.Texture, 0, 0, rl.White)
+		
+		// rl.EndDrawing()
+		
 		rl.DrawText(userInt.Board.CurrentWord, 15, 30, 20, rl.Beige)
 
 		// rl.EndTextureMode()
