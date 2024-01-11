@@ -1,6 +1,6 @@
-# GORTIC
+# GORTIC (to be changed)
 
-My Gartic implemented in Golang
+My Gartic implementation in Golang
 
 ## fonts
 
