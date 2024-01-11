@@ -54,9 +54,9 @@ func (client *Client) Receive() { // goroutine for client receiving
 			switch m := messageg.(type) {
 			case PointMessage:
 				
-				if m.Origin == client.Socket.LocalAddr().String() { // if comes from itself
-					continue
-				}
+				// if m.Origin == client.Socket.LocalAddr().String() { // if comes from itself
+				// 	continue
+				// }
 
 				client.IncomingDrawing <- m
 			default:

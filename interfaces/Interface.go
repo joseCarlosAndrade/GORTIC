@@ -20,6 +20,8 @@ type DrawingBoard struct {
 	Drawing bool
 	Canva rl.RenderTexture2D
 	PointBuffer []server.PointMessage
+	LastPoint []int32
+	LastPointR []int32
 }
 
 type UserInterface struct {
@@ -31,7 +33,14 @@ type UserInterface struct {
 	drawingMutex sync.Mutex
 }
 
+/* Go routine to handle messaging. All client -> server socket messages should be done here */
 func (i *UserInterface)HandleAssyncronousMessages() {
+
+	// for m :=   range i.outgoingDrawing {
+	// 	i.Client.SendCompleteMessage(m)
+	// } // single channel
+	var m sync.Mutex
+
 	for {
 		// select {
 		// case m, ok := <- i.outgoingDrawing:
@@ -40,28 +49,46 @@ func (i *UserInterface)HandleAssyncronousMessages() {
 		// 		return
 		// 	}
 		// 	i.Client.SendCompleteMessage(m)
-		// default:
+		// // default:
 		// }
 		
 		if i.Board.PointBuffer != nil {
+			m.Lock()
 			for _, p := range i.Board.PointBuffer {
 				// i.outgoingDrawing <-p
+				if p.Thickness == 0 {
+					continue
+				}
 				i.Client.SendCompleteMessage(p)
+				fmt.Println("Sending this point: ", p)
 			}
 		// if i.Board.PointBuffer != nil {
 			i.Board.PointBuffer = nil
+			m.Unlock()
 		}
 	}
 }
 
 func InitInterface(drawing bool) {
-
+	var cwo string
+	if drawing  {
+		cwo = "Drawing!"
+	} else {
+		cwo = "Guessing!"
+	}
 	board := &DrawingBoard{
-		CurrentWord: "This word!",
+		CurrentWord: cwo,
 		Drawing: drawing,
 		PointBuffer: nil,
+		LastPoint: make([]int32, 2),
+		LastPointR: make([]int32, 2),
 		// Canva: rl.LoadRenderTexture(ScreenWidth, ScreenHeight), // canva
 	}
+	board.LastPoint[0] = -1
+	board.LastPoint[1] = -1
+
+	board.LastPointR[0] = -1
+	board.LastPointR[1] = -1
 
 	client, err := server.StartInterfaceClient()
 	if err != nil {

@@ -42,93 +42,102 @@ func (userInt * UserInterface) InitScreenRelated() {
 }
 
 func (userInt * UserInterface) CheckDrawing() { // handles the drawing part
+	
 	defer rl.CloseWindow()
 	for !rl.WindowShouldClose() { // while is Drawing
-		
+		pos := rl.GetMousePosition()
+		posX := int32(pos.X)
+		posY := int32(pos.Y)
 
 		// rl.BeginDrawing()
 		// rl.BeginTextureMode(board.Canva) //  TODO: fix sudden black screen for no reason
-		if userInt.Board.Drawing {
-			if  rl.IsMouseButtonDown(rl.MouseButtonLeft)  { // click
 
-				pos := rl.GetMousePosition()
+		if userInt.Board.Drawing {
+			
+			if  rl.IsMouseButtonDown(rl.MouseButtonLeft) && rl.CheckCollisionPointRec(
+				rl.GetMousePosition(),
+				rl.NewRectangle(
+					0, 0,
+					float32(ScreenWidth),
+					float32(ScreenHeight),
+				),
+			)  { // click and inside screen
+				
 				pointdata := server.PointMessage{
 					Origin: userInt.Client.Socket.LocalAddr().String(),
-					Position : server.Vector2{X: int32(pos.X), Y: int32(pos.Y)},
-					Thickness: 4,
-					Color: server.ColorType{R: 10, G: 10, B: 10, A: 255},
+					Position : server.Vector2{X: posX, Y: int32(posY)},
+					Thickness: 1,
+					Color: server.ColorType{R: 100, G: 100, B: 255, A: 255},
 				}
-				// userInt.drawingMutex.Lock()
-				rl.BeginTextureMode(userInt.Board.Canva)
-				rl.DrawCircle(int32(pos.X), int32(pos.Y), 4, rl.White)
-				rl.EndTextureMode()
 
-				userInt.drawingMutex.Lock()
-				userInt.Board.PointBuffer = append(userInt.Board.PointBuffer, pointdata)
-				fmt.Println("point appendend")
-				userInt.drawingMutex.Unlock()
-				// userInt.drawingMutex.Unlock()
+				// rl.BeginTextureMode(userInt.Board.Canva)
 
-				// userInt.drawingMutex.Lock()
-				// if len(userInt.Board.PointBuffer) >= 10 {
-				// 	for _, p := range userInt.Board.PointBuffer {
-						// userInt.outgoingDrawing <- pointdata
+				if userInt.Board.LastPoint[0] == -1 {
+					// rl.DrawCircle(posX, posY, 1, rl.White)
+					pointdata.NewLocation = true
+					
+				} else {
+					// rl.DrawLine(userInt.Board.LastPoint[0], userInt.Board.LastPoint[1], posX, posY, rl.White)
+					pointdata.NewLocation = false
+				}
 
-				// 	}
-				// 	userInt.Board.PointBuffer = nil
-				// }
+				userInt.Board.LastPoint[0] = posX
+				userInt.Board.LastPoint[1] = posY
 				
+				// rl.EndTextureMode()
 
-				fmt.Println("Point drawn on: ", pos)
-				// rl.EndDrawing()
-				// rl.BeginDrawing()
-				// rl.DrawCircle(int32(pos.X), int32(pos.Y), 4, rl.White)
+				userInt.drawingMutex.Lock() // avoid racing conditions
+				
+				// userInt.outgoingDrawing <- pointdata
+				// note: for some reason i cant just send pointdata to outgoingDrawing channel from here, it blocks 
+				// the drawing even when using mutex
+				userInt.Board.PointBuffer = append(userInt.Board.PointBuffer, pointdata) // points are buffered on PointBuffer to centralize socket messaging
+				fmt.Println("point appendend: ", pointdata)
+				userInt.drawingMutex.Unlock()
 
-
+			} else {
+				userInt.Board.LastPoint[0] = -1
 			}
-		 // sending information to server
-			// fmt.Println("AAAAAAAAAAAAAAAAAAAAAAAAAA")
-
-			// userInt.Client.SendCompleteMessage(pointdata) // send to server
-
-		} else if !userInt.Board.Drawing {
-			// for pm := range userInt.Client.IncomingDrawing {
-			// 	p, ok := pm.(server.PointMessage)
-			// 	if ok {
-			// 		fmt.Println("drawing incoming..")
-			// 		rl.DrawCircle(
-			// 		p.Position.X,
-			// 		p.Position.Y,
-			// 		float32(p.Thickness),
-			// 		rl.Blue,
-			// 	)
-			// 	}
-			// }
-			// rl.ClearBackground(rl.White)
+			
+		
+		}
+		// } else if !userInt.Board.Drawing {
+		// 	fmt.Println("loop not drawing")
+			
 		Incoming:
 			for {
 				select {
-				case pm := <- userInt.Client.IncomingDrawing:
+				case pm := <- userInt.Client.IncomingDrawing: // TODO: change this, try a bufferized array or slice
 					p, ok := pm.(server.PointMessage)
 					if ok {
-						fmt.Println("drawing incoming..")
-
+						// fmt.Println("drawing incoming..")
 						rl.BeginTextureMode(userInt.Board.Canva)
-						rl.DrawCircle(
-							p.Position.X,
-							p.Position.Y,
-							float32(p.Thickness),
-							rl.Blue,
+						userInt.drawingMutex.Lock()
+
+						if p.NewLocation { // new line starting at a new location
+							rl.DrawCircle(
+								p.Position.X,
+								p.Position.Y,
+								float32(p.Thickness),
+								rl.NewColor(uint8(p.Color.R), uint8(p.Color.G), uint8(p.Color.B), uint8(p.Color.A)),
 							)
+
+						} else { //continue previous line
+							rl.DrawLine(
+								userInt.Board.LastPointR[0], 
+								userInt.Board.LastPointR[1],
+								p.Position.X, 
+								p.Position.Y, 
+								rl.NewColor(uint8(p.Color.R), uint8(p.Color.G), uint8(p.Color.B), uint8(p.Color.A)))
+
+						}
+
+						userInt.Board.LastPointR[0] = p.Position.X
+						userInt.Board.LastPointR[1] = p.Position.Y
+						userInt.drawingMutex.Unlock()
 						rl.EndTextureMode()
-					// rl.EndDrawing()
-					// rl.BeginDrawing()
-					// rl.DrawCircle(
-					// 	p.Position.X,
-					// 	p.Position.Y,
-					// 	float32(p.Thickness),
-					// 	rl.Blue,
-					// 	)
+					} else {
+						fmt.Println("Error! channel errro on select interface mode ")
 					}
 					
 				default:
@@ -136,7 +145,7 @@ func (userInt * UserInterface) CheckDrawing() { // handles the drawing part
 				}
 			}
 			
-		} 	
+		// } 	
 
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.Black)
@@ -146,19 +155,13 @@ func (userInt * UserInterface) CheckDrawing() { // handles the drawing part
 			rl.NewVector2(0, 0),
 			rl.White,
 		)
-		// rl.DrawTexture(userInt.Board.Canva.Texture, 0, 0, rl.White)
-		
-		// rl.EndDrawing()
-		
-		rl.DrawText(userInt.Board.CurrentWord, 15, 30, 20, rl.Beige)
 
-		// rl.EndTextureMode()
-		// rl.BeginDrawing()
-		// rl.DrawTexture(board.Canva.Texture, 0, 0, rl.Blank) 
+		rl.DrawCircle(posX, posY, 3, rl.White)
+
+		rl.DrawText(userInt.Board.CurrentWord, 15, 30, 20, rl.Beige)
+		
 		rl.EndDrawing()
-		// rl.BeginDrawing()
-		// rl.DrawTextureRec(board.Canva.Texture, rl.Rectangle{0, 0, float32(board.Canva.Texture.Width), float32(-board.Canva.Texture.Height)}, rl.Vector2{0, 0}, rl.White)
-		// rl.EndDrawing()
+
 
 	}
 }
