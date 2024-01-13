@@ -19,6 +19,10 @@ type DrawingBoard struct {
 	CurrentWord string
 	Drawing bool
 	Canva rl.RenderTexture2D
+
+	ColorsAvailable []rl.Color
+	ActiveColor rl.Color
+
 	PointBuffer []server.PointMessage
 	LastPoint []int32
 	LastPointR []int32
@@ -76,14 +80,18 @@ func InitInterface(drawing bool) {
 	} else {
 		cwo = "Guessing!"
 	}
+
+
 	board := &DrawingBoard{
 		CurrentWord: cwo,
 		Drawing: drawing,
 		PointBuffer: nil,
+		ActiveColor: rl.White,
+		ColorsAvailable: AllColors,
 		LastPoint: make([]int32, 2),
 		LastPointR: make([]int32, 2),
-		// Canva: rl.LoadRenderTexture(ScreenWidth, ScreenHeight), // canva
 	}
+	
 	board.LastPoint[0] = -1
 	board.LastPoint[1] = -1
 

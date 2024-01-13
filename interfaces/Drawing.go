@@ -9,11 +9,7 @@ import (
 	"github.com/joseCarlosAndrade/GORTIC/server"
 )
 
-const (
-	ScreenWidth  int32 = 800
-	ScreenHeight int32 = 600
-	FPS          int32 = 120
-)
+
 
 /* Point data that will be passed throught the network */
 // type PointData struct {
@@ -67,9 +63,9 @@ func (userInt * UserInterface) CheckDrawing() { // handles the drawing part
 					Origin: userInt.Client.Socket.LocalAddr().String(),
 					Position : server.Vector2{X: posX, Y: int32(posY)},
 					Thickness: 1,
-					Color: server.ColorType{R: 100, G: 100, B: 255, A: 255},
+					Color: RaylibColor2SColo(userInt.Board.ActiveColor),
 				}
-
+				
 				// rl.BeginTextureMode(userInt.Board.Canva)
 
 				if userInt.Board.LastPoint[0] == -1 {
@@ -119,7 +115,8 @@ func (userInt * UserInterface) CheckDrawing() { // handles the drawing part
 								p.Position.X,
 								p.Position.Y,
 								float32(p.Thickness),
-								rl.NewColor(uint8(p.Color.R), uint8(p.Color.G), uint8(p.Color.B), uint8(p.Color.A)),
+								SColor2RaylibColor(p.Color),
+								// rl.NewColor(uint8(p.Color.R), uint8(p.Color.G), uint8(p.Color.B), uint8(p.Color.A)),
 							)
 
 						} else { //continue previous line
@@ -128,7 +125,9 @@ func (userInt * UserInterface) CheckDrawing() { // handles the drawing part
 								userInt.Board.LastPointR[1],
 								p.Position.X, 
 								p.Position.Y, 
-								rl.NewColor(uint8(p.Color.R), uint8(p.Color.G), uint8(p.Color.B), uint8(p.Color.A)))
+								SColor2RaylibColor(p.Color),
+								// rl.NewColor(uint8(p.Color.R), uint8(p.Color.G), uint8(p.Color.B), uint8(p.Color.A))
+							)
 
 						}
 
@@ -147,6 +146,7 @@ func (userInt * UserInterface) CheckDrawing() { // handles the drawing part
 			
 		// } 	
 
+		// drawing texture buffer
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.Black)
 		rl.DrawTextureRec( // i have to use this function so that the y axis is inverted
@@ -156,7 +156,14 @@ func (userInt * UserInterface) CheckDrawing() { // handles the drawing part
 			rl.White,
 		)
 
-		rl.DrawCircle(posX, posY, 3, rl.White)
+		if userInt.Board.Drawing {
+			userInt.drawColorChoices()			
+		}
+
+		// drawing mouse pointer as a reference
+		rl.DrawCircle(posX, posY, 3, userInt.Board.ActiveColor)
+
+		// draw text related
 		rl.DrawText(userInt.Board.CurrentWord, 15, 30, 20, rl.Beige)
 		
 		rl.EndDrawing()
@@ -165,3 +172,35 @@ func (userInt * UserInterface) CheckDrawing() { // handles the drawing part
 	}
 }
 
+func (inter *UserInterface) drawColorChoices() {
+	// rectangle
+	rl.DrawRectangle(ColorPositionX-15, ColorPositionY-15, int32((len(inter.Board.ColorsAvailable)-2)*30 +60), 30, rl.Beige)
+
+	for i, r := range inter.Board.ColorsAvailable{
+		var thic  float32 = 10
+		if (rl.CheckCollisionPointCircle(
+			rl.GetMousePosition(),
+			rl.NewVector2( float32(ColorPositionX+ int32(i*30)), float32(ColorPositionY)),
+			thic,
+		)) {
+			thic = 15
+
+			if (rl.IsMouseButtonPressed(rl.MouseButtonLeft)) {
+				inter.Board.ActiveColor = r
+			}
+		}
+
+				
+		rl.DrawCircle(ColorPositionX+ int32(i*30), ColorPositionY, thic, r)
+	}
+}
+
+
+// util functions 
+func SColor2RaylibColor(s server.ColorType) rl.Color {
+	return rl.NewColor(uint8(s.R), uint8(s.G), uint8(s.B), uint8(s.A))
+}
+
+func RaylibColor2SColo(r rl.Color) server.ColorType {
+	return server.ColorType{R :int32(r.R), G: int32(r.G), B: int32(r.B), A: int32(r.A)}
+}
