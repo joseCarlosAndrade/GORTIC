@@ -1,15 +1,15 @@
 package interfaces
 
 import (
-	"bufio"
+	// "bufio"
 	"fmt"
 	"sync"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 
 	// "fmt"
-	"os"
-	"strings"
+	// "os"
+	// "strings"
 
 	"github.com/joseCarlosAndrade/GORTIC/server"
 )
@@ -30,7 +30,7 @@ type UserInterface struct {
 
 	// incoming chan server.GMessage // channel to handle incoming messages
 	outgoingDrawing chan server.PointMessage // channel to handle outgoing messages (apparently its not needed???/)
-	drawingMutex sync.Mutex
+	// drawingMutex sync.Mutex
 }
 
 /* Go routine to handle messaging. All client -> server socket messages should be done here */
@@ -52,7 +52,7 @@ func (i *UserInterface)HandleAssyncronousMessages() {
 		// // default:
 		// }
 		
-		if i.Board.PointBuffer != nil {
+		if i.Board.PointBuffer != nil && len(i.Board.PointBuffer) > 0 {
 			m.Lock()
 			for _, p := range i.Board.PointBuffer {
 				// i.outgoingDrawing <-p
@@ -106,27 +106,28 @@ func InitInterface(drawing bool) {
 	 
 	// initializing go routines
 	go client.Receive()
-	go userInterface.InitScreenRelated()
+	// go userInterface.InitScreenRelated()
 	go userInterface.HandleAssyncronousMessages()
+	userInterface.InitScreenRelated()
 
 	 
-	for {
-		reader := bufio.NewReader(os.Stdin)
-		msg, _ := reader.ReadString('\n')
+	// for {
+	// 	reader := bufio.NewReader(os.Stdin)
+	// 	msg, _ := reader.ReadString('\n')
 
-		gm := server.PointMessage{
-			Position: server.Vector2{ X :10,  Y:11},
-			Color: server.ColorType{R: 100, G: 100, B: 100, A: 100},
-			Thickness: 3,
-		}
+	// 	gm := server.PointMessage{
+	// 		Position: server.Vector2{ X :10,  Y:11},
+	// 		Color: server.ColorType{R: 100, G: 100, B: 100, A: 100},
+	// 		Thickness: 3,
+	// 	}
 
-		userInterface.Client.SendCompleteMessage(gm)
+	// 	userInterface.Client.SendCompleteMessage(gm)
 
-		if m := strings.TrimRight(msg, "\n"); m == "exit" {
-			return
-		} else if m == "guess" {
-			board.CurrentWord = "Word Guessed!"
-			board.Drawing = false
-		}
-	}
+	// 	if m := strings.TrimRight(msg, "\n"); m == "exit" {
+	// 		return
+	// 	} else if m == "guess" {
+	// 		board.CurrentWord = "Word Guessed!"
+	// 		board.Drawing = false
+	// 	}
+	// }
 }

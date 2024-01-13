@@ -86,14 +86,14 @@ func (userInt * UserInterface) CheckDrawing() { // handles the drawing part
 				
 				// rl.EndTextureMode()
 
-				userInt.drawingMutex.Lock() // avoid racing conditions
+				// userInt.drawingMutex.Lock() // avoid racing conditions
 				
 				// userInt.outgoingDrawing <- pointdata
 				// note: for some reason i cant just send pointdata to outgoingDrawing channel from here, it blocks 
 				// the drawing even when using mutex
 				userInt.Board.PointBuffer = append(userInt.Board.PointBuffer, pointdata) // points are buffered on PointBuffer to centralize socket messaging
 				fmt.Println("point appendend: ", pointdata)
-				userInt.drawingMutex.Unlock()
+				// userInt.drawingMutex.Unlock()
 
 			} else {
 				userInt.Board.LastPoint[0] = -1
@@ -112,7 +112,7 @@ func (userInt * UserInterface) CheckDrawing() { // handles the drawing part
 					if ok {
 						// fmt.Println("drawing incoming..")
 						rl.BeginTextureMode(userInt.Board.Canva)
-						userInt.drawingMutex.Lock()
+						// userInt.drawingMutex.Lock()
 
 						if p.NewLocation { // new line starting at a new location
 							rl.DrawCircle(
@@ -134,7 +134,7 @@ func (userInt * UserInterface) CheckDrawing() { // handles the drawing part
 
 						userInt.Board.LastPointR[0] = p.Position.X
 						userInt.Board.LastPointR[1] = p.Position.Y
-						userInt.drawingMutex.Unlock()
+						// userInt.drawingMutex.Unlock()
 						rl.EndTextureMode()
 					} else {
 						fmt.Println("Error! channel errro on select interface mode ")
@@ -157,7 +157,6 @@ func (userInt * UserInterface) CheckDrawing() { // handles the drawing part
 		)
 
 		rl.DrawCircle(posX, posY, 3, rl.White)
-
 		rl.DrawText(userInt.Board.CurrentWord, 15, 30, 20, rl.Beige)
 		
 		rl.EndDrawing()
