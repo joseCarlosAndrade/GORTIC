@@ -75,12 +75,16 @@ func (i *UserInterface)HandleAssyncronousMessages() {
 
 func InitInterface(drawing bool) {
 	var cwo string
+	var userName string
 	if drawing  {
 		cwo = "Drawing!"
+		userName = "ClientDrawing"
 	} else {
 		cwo = "Guessing!"
+		userName = "ClientGuess"
 	}
 
+	
 
 	board := &DrawingBoard{
 		CurrentWord: cwo,
@@ -91,14 +95,14 @@ func InitInterface(drawing bool) {
 		LastPoint: make([]int32, 2),
 		LastPointR: make([]int32, 2),
 	}
-	
+
 	board.LastPoint[0] = -1
 	board.LastPoint[1] = -1
 
 	board.LastPointR[0] = -1
 	board.LastPointR[1] = -1
 
-	client, err := server.StartInterfaceClient()
+	client, err := server.StartInterfaceClient(userName)
 	if err != nil {
 		fmt.Println("Error creating client.")
 		panic(err)
@@ -111,7 +115,7 @@ func InitInterface(drawing bool) {
 		outgoingDrawing: make(chan server.PointMessage),
 
 	}
-	 
+	 fmt.Println("chegou aqui!!!!!")
 	// initializing go routines
 	go client.Receive()
 	// go userInterface.InitScreenRelated()

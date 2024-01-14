@@ -5,6 +5,7 @@ import (
 	// "encoding/gob"
 	"fmt"
 	"io"
+	"net"
 	// "net"
 )
 
@@ -20,6 +21,8 @@ type ClientManager struct {
 	broadcast  chan []byte
 	register   chan *Client
 	unregister chan *Client
+
+	names map[*Client]string
 }
 
 
@@ -31,13 +34,14 @@ func (m *ClientManager) Start() {
 		select {
 		case conn := <-m.register: // if channel register has new connection
 			m.clients[conn] = true
-			fmt.Println("added connection: ", conn.Socket.LocalAddr().String())
+			// fmt.Println("added connection: ", conn.Socket.LocalAddr().String())
 
 		case conn := <-m.unregister: // if channel unregister has new unregister request
 			if _, exist := m.clients[conn]; exist {
 				close(conn.Data)
 				delete(m.clients, conn)
-				fmt.Println("connection closed for socket: ", conn.Socket.LocalAddr().String())
+				delete(m.names, conn )
+				fmt.Println("[SERVER MANAGER] Connection closed for socket: ", conn.Socket.LocalAddr().String())
 			}
 
 		case msg := <-m.broadcast: // if theres something on the broadcast channel
@@ -59,9 +63,22 @@ func (m *ClientManager) Receive(client *Client) {
 		msgType := make([]byte, 1)
 		_, err := client.Socket.Read(msgType)
 		if err !=nil {
-			fmt.Println("Error on receiving type")
+			fmt.Println("[SERVER MANAGER] Error on receiving type")
 			fmt.Println(err.Error())
 			if err == io.EOF { // closing connection in case of a eof received
+				fmt.Println("[SERVER MANAGER] EOF received.. closing")
+				m.unregister <- client
+				break
+			} else if err == net.ErrClosed {
+				 
+					m.unregister <- client
+					fmt.Println("Connection broken, finishing client")
+					break
+				
+			} 
+
+			if opErr, ok := err.(*net.OpError); ok && opErr.Err.Error() == "use of closed network connection" {
+				fmt.Println("[SERVER MANAGER] Attempting to message a closed connection. Closing.. ")
 				m.unregister <- client
 				break
 			}
@@ -74,6 +91,11 @@ func (m *ClientManager) Receive(client *Client) {
 		if err != nil {
 			fmt.Println("Error on socket ", client.Socket.LocalAddr().String(), ". Error: ")
 			fmt.Println(err.Error())
+			if err == net.ErrClosed {
+				m.unregister <- client
+				fmt.Println("Connection broke, finishing client")
+				break
+			}
 		} 
 		if length > 0 {
 			msgdecoded,_ := DesserializeMessageData(msg, msgType)

@@ -35,9 +35,26 @@ func DesserializeMessageData(data []byte, mtype []byte) (GMessage, error) { // d
 		return message, nil
 
 	case byte(DMessage):
+	
+	case byte(RegMessage):
+		var msg RegisterMessage
+		decoder.Decode(&msg)
+		return msg, nil
+
+	case byte(RegSucMessage):
+		var msg RegisterSuccessMessage
+		decoder.Decode(&msg)
+		return msg, nil
+
+	case byte(RegFailMessage):
+		var msg RegisterFailureMessage
+		decoder.Decode(&msg)
+		return msg, nil
+
 	default:
 	}
 
 		return nil, nil
+	
 }
 

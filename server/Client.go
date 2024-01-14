@@ -7,8 +7,12 @@ import (
 	"net"
 	"os"
 	"strings"
+
+	// "github.com/joseCarlosAndrade/GORTIC/server"
 	// "github.com/joseCarlosAndrade/GORTIC/server"
 )
+
+
 
 type Client struct {
 	Socket net.Conn
@@ -50,7 +54,9 @@ func (client *Client) Receive() { // goroutine for client receiving
 		if length > 0 {
 			messageg, err := DesserializeMessageData(msg, msgType)
 			
-			
+			if err != nil {
+				panic(err)
+			}
 			switch m := messageg.(type) {
 			case PointMessage:
 				
@@ -76,7 +82,17 @@ func (client *Client) SendCompleteMessage(msg GMessage) error {
 	switch msg.(type) {
 	case PointMessage: // checks message type to send typing information
 		client.Socket.Write([]byte{byte(PMessage)})
+	case RegisterMessage:
+		client.Socket.Write([]byte{byte(RegMessage)})
+
+	case RegisterFailureMessage:
+		client.Socket.Write([]byte{byte(RegFailMessage)}) 
+	case RegisterSuccessMessage:
+		client.Socket.Write([]byte{byte(RegSucMessage)})
+		
 	default:
+		fmt.Println("Typing incorrect on sendcomplete message.")
+		return &RegisterError{} //TODO CREATE A PROPER ERROR HERE
 	}
 	// connection.Write([]byte{byte(msgType)}) // sending type information
 
@@ -123,7 +139,8 @@ func StartDebugClient() { // main client starter
 	}
 }
 
-func StartInterfaceClient() (*Client, error) {
+func StartInterfaceClient(name string) (*Client, error) {
+	fmt.Println("Dialing ...")
 	addr := fmt.Sprintf("localhost%s", PORT)
 	conn, err := net.Dial("tcp", addr)
 
@@ -131,11 +148,78 @@ func StartInterfaceClient() (*Client, error) {
 		return nil, err
 	}
 
+	fmt.Println("Registering..")
+	// send register information
+	r := RegisterMessage{
+		Origin: conn.LocalAddr().String(),
+		UserName: name,
+	}
+
 	client := &Client{
 		Socket:          conn,
 		IncomingDrawing: make(chan GMessage, 100),
 	}
+
+	if e := client.SendCompleteMessage(r); e != nil { // registration
+		return nil, e // coulnd sent
+	} else {
+		// awaiting server response
+		fmt.Println("Sent registration protocol. Waiting for server aproval..")
+		response, err := ReceiveSingleMessage(client)
+		if err != nil {
+			return nil, err
+		}
+
+		switch r := response.(type) {
+		case RegisterSuccessMessage:
+			fmt.Println("[CLIENT] Registration accepted")
+			return client, nil
+		case RegisterFailureMessage:
+			fmt.Println("Registration failed: ", r.Cause)
+			return nil, &RegisterError{}
+		default: // received any message other than register
+			fmt.Println("ops!")
+			return nil, &RegisterError{}
+		}
+
+		
+	}
 	// go client.Receive()
 
-	return client, nil
+	// return client, nil
+}
+
+func ReceiveSingleMessage(client *Client) (GMessage, error) {
+	msgType := make([]byte, 1)
+		_, err := client.Socket.Read(msgType)
+		if err !=nil {
+			fmt.Println("Error on receiving type")
+			fmt.Println(err.Error())
+			if err == io.EOF { // closing connection in case of a eof received
+				return nil, err
+				
+			}
+		}
+		fmt.Println("Type received: ", msgType)
+
+		msg := make([]byte, MESSAGE_LENGTH)
+		length, err := client.Socket.Read(msg)
+		
+		if err != nil {
+			fmt.Println("Error on socket ", client.Socket.LocalAddr().String(), ". Error: ")
+			fmt.Println(err.Error())
+			return nil, err
+		} 
+		if length > 0 {
+			msgdecoded,_ := DesserializeMessageData(msg, msgType)
+			fmt.Println(" Message received: ", msgdecoded)
+			return msgdecoded, nil
+			// TODO: set name operation
+			// if msg == set_name client.name etc etc and not broadcast
+			
+			// m.broadcast <- append(msgType, msg...) // weird way of appending two slices ???
+			// m.broadcast <- msg // broadcasting (channeling received msg to broadcast channel)
+		} else {
+			return nil, &EmptyMessageError{}
+		}
 }
