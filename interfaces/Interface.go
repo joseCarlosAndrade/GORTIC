@@ -1,15 +1,14 @@
 package interfaces
 
 import (
-	// "bufio"
+	"bufio"
 	"fmt"
 	"sync"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 
-	// "fmt"
-	// "os"
-	// "strings"
+	"os"
+	"strings"
 
 	"github.com/joseCarlosAndrade/GORTIC/server"
 )
@@ -17,19 +16,19 @@ import (
 /* Interface handler */
 type DrawingBoard struct {
 	CurrentWord string
-	Drawing bool
-	Canva rl.RenderTexture2D
+	Drawing     bool
+	Canva       rl.RenderTexture2D
 
 	ColorsAvailable []rl.Color
-	ActiveColor rl.Color
+	ActiveColor     rl.Color
 
 	PointBuffer []server.PointMessage
-	LastPoint []int32
-	LastPointR []int32
+	LastPoint   []int32
+	LastPointR  []int32
 }
 
 type UserInterface struct {
-	Board *DrawingBoard
+	Board  *DrawingBoard
 	Client *server.Client
 
 	// incoming chan server.GMessage // channel to handle incoming messages
@@ -38,7 +37,7 @@ type UserInterface struct {
 }
 
 /* Go routine to handle messaging. All client -> server socket messages should be done here */
-func (i *UserInterface)HandleAssyncronousMessages() {
+func (i *UserInterface) HandleAssyncronousMessages() {
 
 	// for m :=   range i.outgoingDrawing {
 	// 	i.Client.SendCompleteMessage(m)
@@ -55,7 +54,7 @@ func (i *UserInterface)HandleAssyncronousMessages() {
 		// 	i.Client.SendCompleteMessage(m)
 		// // default:
 		// }
-		
+
 		if i.Board.PointBuffer != nil && len(i.Board.PointBuffer) > 0 {
 			m.Lock()
 			for _, p := range i.Board.PointBuffer {
@@ -66,34 +65,44 @@ func (i *UserInterface)HandleAssyncronousMessages() {
 				i.Client.SendCompleteMessage(p)
 				fmt.Println("Sending this point: ", p)
 			}
-		// if i.Board.PointBuffer != nil {
+			// if i.Board.PointBuffer != nil {
 			i.Board.PointBuffer = nil
 			m.Unlock()
 		}
 	}
 }
 
+func getInputName() string {
+	reader := bufio.NewReader(os.Stdin)
+	msg, er := reader.ReadString('\n')
+	if er != nil {
+		panic(er)
+	}
+	return strings.TrimRight(msg, "\n")
+}
+
 func InitInterface(drawing bool) {
+	fmt.Println("\n\nHello! Please type your username and press enter (no spaces!):\n ")
+	userName := getInputName()
+	fmt.Println("Name chosen: ", userName)
+
 	var cwo string
-	var userName string
-	if drawing  {
+	if drawing {
 		cwo = "Drawing!"
-		userName = "ClientDrawing"
+		// userName = "ClientDrawing"
 	} else {
 		cwo = "Guessing!"
-		userName = "ClientGuess"
+		// userName = "ClientGuess"
 	}
 
-	
-
 	board := &DrawingBoard{
-		CurrentWord: cwo,
-		Drawing: drawing,
-		PointBuffer: nil,
-		ActiveColor: rl.White,
+		CurrentWord:     cwo,
+		Drawing:         drawing,
+		PointBuffer:     nil,
+		ActiveColor:     rl.White,
 		ColorsAvailable: AllColors,
-		LastPoint: make([]int32, 2),
-		LastPointR: make([]int32, 2),
+		LastPoint:       make([]int32, 2),
+		LastPointR:      make([]int32, 2),
 	}
 
 	board.LastPoint[0] = -1
@@ -109,20 +118,18 @@ func InitInterface(drawing bool) {
 	}
 
 	userInterface := UserInterface{
-		Board: board,
+		Board:  board,
 		Client: client,
 		// incoming: make(chan server.GMessage),
 		outgoingDrawing: make(chan server.PointMessage),
-
 	}
-	 fmt.Println("chegou aqui!!!!!")
+	fmt.Println("chegou aqui!!!!!")
 	// initializing go routines
 	go client.Receive()
 	// go userInterface.InitScreenRelated()
 	go userInterface.HandleAssyncronousMessages()
 	userInterface.InitScreenRelated()
 
-	 
 	// for {
 	// 	reader := bufio.NewReader(os.Stdin)
 	// 	msg, _ := reader.ReadString('\n')

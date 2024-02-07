@@ -50,6 +50,16 @@ func DesserializeMessageData(data []byte, mtype []byte) (GMessage, error) { // d
 		var msg RegisterFailureMessage
 		decoder.Decode(&msg)
 		return msg, nil
+	
+	case byte(BeginDrawingModeT):
+		var msg BeginDrawingMessage
+		decoder.Decode(&msg)
+		return msg, nil
+	
+	case byte(StopDrawingModeT):
+		var msg StopDrawingMessage
+		decoder.Decode(&msg)
+		return msg, nil
 
 	default:
 	}

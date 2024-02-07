@@ -23,6 +23,8 @@ type ClientManager struct {
 	unregister chan *Client
 
 	names map[*Client]string
+
+	serverSideMessaging chan GMessage
 }
 
 
@@ -42,6 +44,7 @@ func (m *ClientManager) Start() {
 				delete(m.clients, conn)
 				delete(m.names, conn )
 				fmt.Println("[SERVER MANAGER] Connection closed for socket: ", conn.Socket.LocalAddr().String())
+				m.serverSideMessaging <- ExitMessage{name: conn.Socket.LocalAddr().String()}
 			}
 
 		case msg := <-m.broadcast: // if theres something on the broadcast channel
@@ -99,13 +102,33 @@ func (m *ClientManager) Receive(client *Client) {
 		} 
 		if length > 0 {
 			msgdecoded,_ := DesserializeMessageData(msg, msgType)
-			fmt.Println("[BROADCASTING] Message received: ", msgdecoded)
-
-			// TODO: set name operation
-			// if msg == set_name client.name etc etc and not broadcast
 			
-			m.broadcast <- append(msgType, msg...) // weird way of appending two slices ???
-			// m.broadcast <- msg // broadcasting (channeling received msg to broadcast channel)
+			switch msgType[0] {
+			case byte(PMessage):
+				fmt.Println("[BROADCASTING] Message received: ", msgdecoded)
+
+
+				// TODO: set name operation
+				// if msg == set_name client.name etc etc and not broadcast
+				
+				m.broadcast <- append(msgType, msg...) // weird way of appending two slices ???
+				// m.broadcast <- msg // broadcasting (channeling received msg to broadcast channel)
+
+			case byte(DMessage):
+	
+			case byte(RegMessage):				
+		
+			case byte(RegSucMessage):
+				m.serverSideMessaging <- msgdecoded
+
+			case byte(RegFailMessage):
+			
+			case byte(BeginDrawingModeT):
+				
+			case byte(StopDrawingModeT):
+				
+			}
+			
 		}
 	}
 }
@@ -130,3 +153,7 @@ func (m *ClientManager) Send(client *Client) {
 	}
 }
 
+/* handles all server logic such as word choosing, current player, correct and incorrect guesses, etc*/
+func (cm* ClientManager)ServerSideLogic() {
+
+}

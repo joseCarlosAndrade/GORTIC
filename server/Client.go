@@ -65,6 +65,9 @@ func (client *Client) Receive() { // goroutine for client receiving
 				// }
 
 				client.IncomingDrawing <- m
+
+			case BeginDrawingMessage:
+				
 			default:
 			}
 			

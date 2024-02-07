@@ -30,6 +30,7 @@ func StartServer() {
 	}
 	
 	go clientManager.Start() // start goroutine for broadcasting, register and unregister
+	go clientManager.ServerSideLogic()
 
 	// main loop to accept connections
 	Accepting:
@@ -58,7 +59,7 @@ func StartServer() {
 			case RegisterMessage: 
 				for _, m := range clientManager.names {
 					if m == t.UserName { // name already used
-						fmt.Println("Name '", m, "' already used. Responding request with RegisterFailureMessage. Closing this connection.")
+						// fmt.Println("Name '", m, "' already used. Responding request with RegisterFailureMessage. Closing this connection.")
 						if e:= client.SendCompleteMessage(RegisterFailureMessage{Cause: "NAME ALREADY USED"}); e != nil {
 							fmt.Println("[SERVER] Did not respond successfully: ", e )
 						}
@@ -91,6 +92,7 @@ func StartServer() {
 		// send and receive goroutines
 		go clientManager.Receive(client)
 		go clientManager.Send(client)
+		
 	}
 }
 

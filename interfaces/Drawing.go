@@ -104,9 +104,8 @@ func (userInt * UserInterface) CheckDrawing() { // handles the drawing part
 			for {
 				select {
 				case pm := <- userInt.Client.IncomingDrawing: // TODO: change this, try a bufferized array or slice
-					p, ok := pm.(server.PointMessage)
-					if ok {
-						// fmt.Println("drawing incoming..")
+					switch p := pm.(type) {
+					case server.PointMessage:
 						rl.BeginTextureMode(userInt.Board.Canva)
 						// userInt.drawingMutex.Lock()
 
@@ -135,9 +134,17 @@ func (userInt * UserInterface) CheckDrawing() { // handles the drawing part
 						userInt.Board.LastPointR[1] = p.Position.Y
 						// userInt.drawingMutex.Unlock()
 						rl.EndTextureMode()
-					} else {
-						fmt.Println("Error! channel errro on select interface mode ")
+
+					case server.BeginDrawingMessage:
+						userInt.Board.Drawing = true
+
+					case server.StopDrawingMessage:
+						userInt.Board.Drawing = false
+						
 					}
+					
+					// p, ok := pm.(server.PointMessage)
+					
 					
 				default:
 					break Incoming
