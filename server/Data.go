@@ -17,9 +17,10 @@ type ColorType struct {
 const (
 	// message typing // TODO: change names to make it less confusing, after all everything here is just a type 
 	TypeLength     int32 = 8
-	PMessage       int8  = 0x00000000
-	DMessage       int8  = 0x00000001
+	PMessage       int8  = 0x00000000 // point message 
+	DMessage       int8  = 0x00000001 
 	ExitMessageT    int8  = 0x00000002
+	// registration messages
 	RegMessage     int8  = 0x00000003
 	RegFailMessage int8  = 0x00000004
 	RegSucMessage  int8  = 0x00000005

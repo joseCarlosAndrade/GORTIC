@@ -31,8 +31,8 @@ type UserInterface struct {
 	Board  *DrawingBoard
 	Client *server.Client
 
-	// incoming chan server.GMessage // channel to handle incoming messages
-	outgoingDrawing chan server.PointMessage // channel to handle outgoing messages (apparently its not needed???/)
+	incomingMessages chan server.GMessage     // channel to handle incoming messages
+	outgoingDrawing  chan server.PointMessage // channel to handle outgoing messages (apparently its not needed???/)
 	// drawingMutex sync.Mutex
 }
 
@@ -53,6 +53,17 @@ func (i *UserInterface) HandleAssyncronousMessages() {
 		// 	}
 		// 	i.Client.SendCompleteMessage(m)
 		// // default:
+		// }
+
+		// select {
+		// case m, ok := <-i.incomingMessages:
+		// 	if !ok {
+		// 		fmt.Println("Message channel error on HandleAssyncronousMessages")
+		// 	} else {
+		// 		fmt.Println("received something")
+		// 		switch m.(type) {
+				
+		// 	}
 		// }
 
 		if i.Board.PointBuffer != nil && len(i.Board.PointBuffer) > 0 {
@@ -120,7 +131,7 @@ func InitInterface(drawing bool) {
 	userInterface := UserInterface{
 		Board:  board,
 		Client: client,
-		// incoming: make(chan server.GMessage),
+		incomingMessages: make(chan server.GMessage),
 		outgoingDrawing: make(chan server.PointMessage),
 	}
 	fmt.Println("chegou aqui!!!!!")

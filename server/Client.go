@@ -19,6 +19,7 @@ type Client struct {
 	Data   chan []byte // channel for server -> client messages broadcasting
 
 	IncomingDrawing chan GMessage
+	
 	// TODO: add info
 	// name string
 }
@@ -58,17 +59,20 @@ func (client *Client) Receive() { // goroutine for client receiving
 				panic(err)
 			}
 			switch m := messageg.(type) {
-			case PointMessage:
+			// case PointMessage:
 				
-				// if m.Origin == client.Socket.LocalAddr().String() { // if comes from itself
-				// 	continue
-				// }
+			// 	// if m.Origin == client.Socket.LocalAddr().String() { // if comes from itself
+			// 	// 	continue
+			// 	// }
 
-				client.IncomingDrawing <- m
+				
 
-			case BeginDrawingMessage:
+			// case BeginDrawingMessage:
+			
+			// case StopDrawingMessage:
 				
 			default:
+				client.IncomingDrawing <- m
 			}
 			
 			if err != nil {
@@ -92,6 +96,10 @@ func (client *Client) SendCompleteMessage(msg GMessage) error {
 		client.Socket.Write([]byte{byte(RegFailMessage)}) 
 	case RegisterSuccessMessage:
 		client.Socket.Write([]byte{byte(RegSucMessage)})
+	case BeginDrawingMessage:
+		client.Socket.Write([]byte{byte(BeginDrawingModeT)})
+	case StopDrawingMessage:
+		client.Socket.Write([]byte{byte(StopDrawingModeT)})
 		
 	default:
 		fmt.Println("Typing incorrect on sendcomplete message.")

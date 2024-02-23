@@ -27,6 +27,7 @@ func StartServer() {
 		register: make(chan *Client),
 		unregister: make(chan *Client),
 		names: make(map[*Client]string),
+		playersTurn: make(map[*Client]bool),
 	}
 	
 	go clientManager.Start() // start goroutine for broadcasting, register and unregister
